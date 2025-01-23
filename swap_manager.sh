@@ -49,7 +49,8 @@ show_menu() {
     echo -e "${GREEN}3. 查看当前交换空间信息${NC}"
     echo -e "${GREEN}4. 调整内存交换倾向性${NC}"
     echo -e "${GREEN}5. 内存压力测试${NC}"
-    echo -e "${RED}6. 退出${NC}"
+    echo -e "${RED}6. 卸载程序${NC}"
+    echo -e "${RED}7. 退出${NC}"
     echo -e "${BLUE}=====================================${NC}\n"
 }
 
@@ -400,10 +401,37 @@ stress_test() {
     
 }
 
+# 添加卸载函数
+uninstall_program() {
+    echo -e "${YELLOW}准备卸载 Swap Manager...${NC}"
+    
+    # 确认卸载
+    read -p "确定要卸载吗？这将删除交换文件和程序(y/n): " confirm
+    if [[ ! $confirm =~ ^[Yy]$ ]]; then
+        echo -e "${BLUE}取消卸载。${NC}"
+        return
+    fi
+
+    # 删除交换文件（如果存在）
+    if [ -f /swapfile ]; then
+        echo -e "${BLUE}正在删除交换文件...${NC}"
+        sudo swapoff /swapfile 2>/dev/null
+        sudo rm -f /swapfile
+        sudo sed -i '/\/swapfile/d' /etc/fstab
+    fi
+
+    # 删除程序本体
+    echo -e "${BLUE}正在删除程序...${NC}"
+    sudo rm -f /usr/local/bin/swap
+
+    echo -e "${GREEN}✓ Swap Manager 已完全卸载。${NC}"
+    exit 0
+}
+
 # 主循环
 while true; do
     show_menu
-    read -p "请输入选项（1-6）：" choice
+    read -p "请输入选项（1-7）：" choice
 
     case $choice in
         1) create_swap ;;
@@ -411,7 +439,8 @@ while true; do
         3) view_swap ;;
         4) adjust_swappiness ;;
         5) stress_test ;;
-        6) break ;;
+        6) uninstall_program ;;
+        7) break ;;
         *) echo -e "${RED}✗ 无效选项，请重新输入。${NC}" ;;
     esac
 done
