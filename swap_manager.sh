@@ -19,20 +19,92 @@ fi
 
 # 检查并安装必要依赖
 check_dependencies() {
+    # 检查包管理器
+    if command -v apt-get &> /dev/null; then
+        PKG_MANAGER="apt-get"
+        INSTALL_CMD="apt-get install -y"
+    elif command -v yum &> /dev/null; then
+        PKG_MANAGER="yum"
+        INSTALL_CMD="yum install -y"
+    elif command -v apk &> /dev/null; then
+        PKG_MANAGER="apk"
+        INSTALL_CMD="apk add"
+    elif command -v pacman &> /dev/null; then
+        PKG_MANAGER="pacman"
+        INSTALL_CMD="pacman -S --noconfirm"
+    else
+        echo -e "${RED}✗ 未能识别系统的包管理器。${NC}"
+        exit 1
+    fi
+
+    # 检查必要工具
+    MISSING_TOOLS=()
+    
+    # 检查bc
     if ! command -v bc &> /dev/null; then
-        echo -e "${YELLOW}正在安装bc计算器工具...${NC}"
-        if command -v apt-get &> /dev/null; then
-            sudo apt-get install -y bc
-        elif command -v yum &> /dev/null; then
-            sudo yum install -y bc
+        MISSING_TOOLS+=("bc")
+    fi
+    
+    # 检查stress（可选）
+    if ! command -v stress &> /dev/null; then
+        echo -e "${YELLOW}注意: stress工具未安装，压力测试功能将不可用。${NC}"
+        if [[ "$PKG_MANAGER" == "apk" ]]; then
+            STRESS_PKG="stress-ng"
         else
-            echo -e "${RED}✗ 无法自动安装bc，请手动安装后重试。${NC}"
+            STRESS_PKG="stress"
+        fi
+    fi
+
+    # 检查基本系统工具
+    for tool in swapon mkswap free df; do
+        if ! command -v $tool &> /dev/null; then
+            case $PKG_MANAGER in
+                "apt-get"|"yum") MISSING_TOOLS+=("util-linux") ;;
+                "apk") MISSING_TOOLS+=("util-linux-misc") ;;
+                "pacman") MISSING_TOOLS+=("util-linux") ;;
+            esac
+            break
+        fi
+    done
+
+    # 安装缺失的工具
+    if [ ${#MISSING_TOOLS[@]} -ne 0 ]; then
+        echo -e "${YELLOW}正在安装必要工具: ${MISSING_TOOLS[*]}${NC}"
+        if ! sudo $INSTALL_CMD "${MISSING_TOOLS[@]}"; then
+            echo -e "${RED}✗ 工具安装失败。请手动安装以下包: ${MISSING_TOOLS[*]}${NC}"
             exit 1
         fi
     fi
 }
 
-# 在脚本开始处调用
+# 系统兼容性检查
+check_system_compatibility() {
+    # 检查是否支持swap
+    if ! grep -q "SwapTotal" /proc/meminfo; then
+        echo -e "${RED}✗ 此系统可能不支持交换空间功能。${NC}"
+        exit 1
+    fi
+
+    # 检查文件系统支持
+    if ! touch /.swap_test_file 2>/dev/null; then
+        echo -e "${RED}✗ 根文件系统不支持创建文件，请检查文件系统权限。${NC}"
+        exit 1
+    fi
+    rm -f /.swap_test_file
+
+    # Alpine特殊处理
+    if [ -f /etc/alpine-release ]; then
+        echo -e "${YELLOW}检测到Alpine Linux系统${NC}"
+        # 检查必要的内核模块
+        if ! grep -q "swap" /proc/modules; then
+            echo -e "${YELLOW}正在加载swap内核模块...${NC}"
+            sudo modprobe swap
+        fi
+    fi
+}
+
+# 在主程序开始时调用
+check_system_compatibility
 check_dependencies
 
 # 检查系统是否支持交换文件
