@@ -85,22 +85,45 @@ check_system_compatibility() {
         exit 1
     fi
 
+    # Alpine特殊处理
+    if [ -f /etc/alpine-release ]; then
+        echo -e "${YELLOW}检测到Alpine Linux系统${NC}"
+        
+        # 检查必要的包
+        MISSING_PKGS=()
+        for pkg in sudo wget bash util-linux-misc bc; do
+            if ! command -v $pkg >/dev/null 2>&1; then
+                MISSING_PKGS+=($pkg)
+            fi
+        done
+        
+        if [ ${#MISSING_PKGS[@]} -ne 0 ]; then
+            echo -e "${YELLOW}检测到缺少必要的包: ${MISSING_PKGS[*]}${NC}"
+            echo -e "${BLUE}正在自动安装必要的包...${NC}"
+            
+            # 尝试直接使用apk安装
+            if apk add ${MISSING_PKGS[*]}; then
+                echo -e "${GREEN}✓ 必要的包安装成功${NC}"
+            else
+                echo -e "${RED}✗ 包安装失败，请手动运行以下命令：${NC}"
+                echo -e "apk add ${MISSING_PKGS[*]}"
+                exit 1
+            fi
+        fi
+
+        # 检查必要的内核模块
+        if ! grep -q "swap" /proc/modules; then
+            echo -e "${YELLOW}正在加载swap内核模块...${NC}"
+            modprobe swap
+        fi
+    fi
+
     # 检查文件系统支持
     if ! touch /.swap_test_file 2>/dev/null; then
         echo -e "${RED}✗ 根文件系统不支持创建文件，请检查文件系统权限。${NC}"
         exit 1
     fi
     rm -f /.swap_test_file
-
-    # Alpine特殊处理
-    if [ -f /etc/alpine-release ]; then
-        echo -e "${YELLOW}检测到Alpine Linux系统${NC}"
-        # 检查必要的内核模块
-        if ! grep -q "swap" /proc/modules; then
-            echo -e "${YELLOW}正在加载swap内核模块...${NC}"
-            sudo modprobe swap
-        fi
-    fi
 }
 
 # 在主程序开始时调用
