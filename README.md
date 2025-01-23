@@ -21,6 +21,20 @@ sudo wget -qO /usr/local/bin/swap https://raw.githubusercontent.com/heyuecock/sw
 ```bash
 swap
 ```
+## 🗑️ 卸载
+
+### 方法一：使用程序卸载（推荐）
+```bash
+swap  # 进入程序后选择"卸载程序"选项
+```
+
+### 方法二：手动卸载
+```bash
+sudo swapoff /swapfile  # 关闭交换文件
+sudo rm -f /swapfile    # 删除交换文件
+sudo sed -i '/\/swapfile/d' /etc/fstab  # 从fstab中删除配置
+sudo rm -f /usr/local/bin/swap  # 删除程序
+```
 
 ### 主要功能
 
