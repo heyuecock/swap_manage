@@ -535,29 +535,76 @@ stress_test() {
 
 # 添加卸载函数
 uninstall_program() {
-    echo -e "${YELLOW}准备卸载 Swap Manager...${NC}"
+    echo -e "${YELLOW}准备卸载...${NC}"
     
-    # 确认卸载
-    read -p "确定要卸载吗？这将删除交换文件和程序(y/n): " confirm
-    if [[ ! $confirm =~ ^[Yy]$ ]]; then
-        echo -e "${BLUE}取消卸载。${NC}"
-        return
-    fi
-
-    # 删除交换文件（如果存在）
-    if [ -f /swapfile ]; then
-        echo -e "${BLUE}正在删除交换文件...${NC}"
-        sudo swapoff /swapfile 2>/dev/null
-        sudo rm -f /swapfile
-        sudo sed -i '/\/swapfile/d' /etc/fstab
-    fi
-
-    # 删除程序本体
-    echo -e "${BLUE}正在删除程序...${NC}"
-    sudo rm -f /usr/local/bin/swap
-
-    echo -e "${GREEN}✓ Swap Manager 已完全卸载。${NC}"
-    exit 0
+    echo -e "\n${BLUE}请选择卸载选项：${NC}"
+    echo -e "${GREEN}1. 仅删除交换文件${NC}"
+    echo -e "${GREEN}2. 仅删除程序${NC}"
+    echo -e "${RED}3. 删除交换文件和程序${NC}"
+    echo -e "${BLUE}4. 取消${NC}"
+    
+    read -p "请输入选项（1-4）：" uninstall_choice
+    
+    case $uninstall_choice in
+        1)  # 仅删除交换文件
+            read -p "确定要删除交换文件吗？(y/n): " confirm
+            if [[ $confirm =~ ^[Yy]$ ]]; then
+                if [ -f /swapfile ]; then
+                    echo -e "${BLUE}正在删除交换文件...${NC}"
+                    sudo swapoff /swapfile 2>/dev/null
+                    sudo rm -f /swapfile
+                    sudo sed -i '/\/swapfile/d' /etc/fstab
+                    echo -e "${GREEN}✓ 交换文件已删除${NC}"
+                else
+                    echo -e "${YELLOW}未找到交换文件${NC}"
+                fi
+            else
+                echo -e "${BLUE}取消删除交换文件${NC}"
+            fi
+            ;;
+            
+        2)  # 仅删除程序
+            read -p "确定要删除程序吗？(y/n): " confirm
+            if [[ $confirm =~ ^[Yy]$ ]]; then
+                echo -e "${BLUE}正在删除程序...${NC}"
+                sudo rm -f /usr/local/bin/swap
+                echo -e "${GREEN}✓ 程序已删除${NC}"
+                exit 0
+            else
+                echo -e "${BLUE}取消删除程序${NC}"
+            fi
+            ;;
+            
+        3)  # 删除全部
+            read -p "确定要删除交换文件和程序吗？(y/n): " confirm
+            if [[ $confirm =~ ^[Yy]$ ]]; then
+                # 删除交换文件
+                if [ -f /swapfile ]; then
+                    echo -e "${BLUE}正在删除交换文件...${NC}"
+                    sudo swapoff /swapfile 2>/dev/null
+                    sudo rm -f /swapfile
+                    sudo sed -i '/\/swapfile/d' /etc/fstab
+                    echo -e "${GREEN}✓ 交换文件已删除${NC}"
+                fi
+                
+                # 删除程序
+                echo -e "${BLUE}正在删除程序...${NC}"
+                sudo rm -f /usr/local/bin/swap
+                echo -e "${GREEN}✓ 程序已删除${NC}"
+                exit 0
+            else
+                echo -e "${BLUE}取消卸载${NC}"
+            fi
+            ;;
+            
+        4)  # 取消
+            echo -e "${BLUE}取消卸载${NC}"
+            ;;
+            
+        *)
+            echo -e "${RED}✗ 无效选项${NC}"
+            ;;
+    esac
 }
 
 # 主循环
