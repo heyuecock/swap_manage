@@ -52,22 +52,25 @@ show_menu() {
 # 创建交换文件
 create_swap() {
     while true; do
-        read -p "请输入交换文件大小（单位：GB，范围0.1-5，默认1GB）：" SWAP_SIZE
-        SWAP_SIZE=${SWAP_SIZE:-1}  # 如果用户未输入，则默认1GB
+        read -p "请输入交换文件大小（单位：MB，范围100-5120，默认1024MB）：" SWAP_SIZE
+        SWAP_SIZE=${SWAP_SIZE:-1024}  # 如果用户未输入，则默认1024MB
         
         # 验证输入是否合法
-        if [[ $SWAP_SIZE =~ ^[0-9]*\.?[0-9]+$ ]]; then
-            if (( $(echo "$SWAP_SIZE >= 0.1 && $SWAP_SIZE <= 5" | bc -l 2>/dev/null) )); then
+        if [[ $SWAP_SIZE =~ ^[0-9]+$ ]]; then
+            if (( SWAP_SIZE >= 100 && SWAP_SIZE <= 5120 )); then
                 break
             fi
         fi
-        echo -e "${YELLOW}⚠️ 输入值无效，请输入0.1到5之间的数字。${NC}"
+        echo -e "${YELLOW}⚠️ 输入值无效，请输入100到5120之间的整数。${NC}"
     done
 
-    # 检查磁盘空间是否足够
-    DISK_SPACE=$(df -BG / | awk 'NR==2 {print $4}' | tr -d 'G')
-    if (( $(echo "$DISK_SPACE < $SWAP_SIZE" | bc -l) )); then
-        echo -e "${YELLOW}⚠️ 磁盘空间不足，无法创建 ${SWAP_SIZE}GB 的交换文件。${NC}"
+    # 将MB转换为字节用于检查磁盘空间
+    SWAP_SIZE_BYTES=$((SWAP_SIZE * 1024 * 1024))
+    
+    # 检查磁盘空间是否足够(以MB为单位进行比较)
+    DISK_SPACE=$(df -BM / | awk 'NR==2 {print $4}' | tr -d 'M')
+    if (( DISK_SPACE < SWAP_SIZE )); then
+        echo -e "${YELLOW}⚠️ 磁盘空间不足，无法创建 ${SWAP_SIZE}MB 的交换文件。${NC}"
         return
     fi
 
@@ -79,8 +82,8 @@ create_swap() {
     fi
 
     # 创建交换文件
-    echo -e "${BLUE}正在创建 ${SWAP_SIZE}GB 的交换文件...${NC}"
-    sudo fallocate -l ${SWAP_SIZE}G /swapfile
+    echo -e "${BLUE}正在创建 ${SWAP_SIZE}MB 的交换文件...${NC}"
+    sudo fallocate -l ${SWAP_SIZE}M /swapfile
     if [ $? -ne 0 ]; then
         echo -e "${RED}✗ 交换文件创建失败，请检查磁盘空间。${NC}"
         return
@@ -114,7 +117,7 @@ create_swap() {
     fi
 
     # 输出结果
-    echo -e "${GREEN}✓ ${SWAP_SIZE}GB 虚拟内存已成功创建并启用。当前内存和交换空间信息：${NC}"
+    echo -e "${GREEN}✓ ${SWAP_SIZE}MB 虚拟内存已成功创建并启用。当前内存和交换空间信息：${NC}"
     free -h
 }
 
