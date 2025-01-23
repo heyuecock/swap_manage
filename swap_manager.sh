@@ -7,12 +7,16 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # 重置颜色
 
-# 检查是否为root用户，如果不是则使用sudo重新运行
+# 检查是否为root用户，如果不是则尝试使用sudo或提示使用root
 if [ "$EUID" -ne 0 ]; then
     if command -v sudo >/dev/null 2>&1; then
         exec sudo "$0" "$@"
     else
-        echo -e "${RED}✗ 此脚本需要root权限运行。请使用sudo或以root用户运行。${NC}"
+        echo -e "${YELLOW}未检测到sudo。${NC}"
+        echo -e "${BLUE}在Alpine Linux中，请使用以下命令：${NC}"
+        echo -e "${GREEN}su -c 'wget -qO /usr/local/bin/swap https://raw.githubusercontent.com/heyuecock/swap_manage/refs/heads/main/swap_manager.sh && chmod +x /usr/local/bin/swap'${NC}"
+        echo -e "${BLUE}然后使用以下命令运行：${NC}"
+        echo -e "${GREEN}su -c swap${NC}"
         exit 1
     fi
 fi
@@ -37,42 +41,51 @@ check_dependencies() {
         exit 1
     fi
 
-    # 检查必要工具
+    # 检查并安装基本工具
     MISSING_TOOLS=()
     
-    # 检查bc
-    if ! command -v bc &> /dev/null; then
-        MISSING_TOOLS+=("bc")
-    fi
-    
-    # 检查stress（可选）
-    if ! command -v stress &> /dev/null; then
-        echo -e "${YELLOW}注意: stress工具未安装，压力测试功能将不可用。${NC}"
-        if [[ "$PKG_MANAGER" == "apk" ]]; then
-            STRESS_PKG="stress-ng"
-        else
-            STRESS_PKG="stress"
-        fi
-    fi
-
-    # 检查基本系统工具
-    for tool in swapon mkswap free df; do
+    # 检查基本工具
+    for tool in bc swapon mkswap free df; do
         if ! command -v $tool &> /dev/null; then
             case $PKG_MANAGER in
-                "apt-get"|"yum") MISSING_TOOLS+=("util-linux") ;;
-                "apk") MISSING_TOOLS+=("util-linux-misc") ;;
-                "pacman") MISSING_TOOLS+=("util-linux") ;;
+                "apt-get"|"yum") 
+                    if [[ "$tool" == "bc" ]]; then
+                        MISSING_TOOLS+=("bc")
+                    else
+                        MISSING_TOOLS+=("util-linux")
+                    fi
+                    ;;
+                "apk") 
+                    if [[ "$tool" == "bc" ]]; then
+                        MISSING_TOOLS+=("bc")
+                    else
+                        MISSING_TOOLS+=("util-linux-misc")
+                    fi
+                    ;;
+                "pacman")
+                    if [[ "$tool" == "bc" ]]; then
+                        MISSING_TOOLS+=("bc")
+                    else
+                        MISSING_TOOLS+=("util-linux")
+                    fi
+                    ;;
             esac
-            break
         fi
     done
 
-    # 安装缺失的工具
+    # 安装缺失的基本工具
     if [ ${#MISSING_TOOLS[@]} -ne 0 ]; then
         echo -e "${YELLOW}正在安装必要工具: ${MISSING_TOOLS[*]}${NC}"
-        if ! sudo $INSTALL_CMD "${MISSING_TOOLS[@]}"; then
-            echo -e "${RED}✗ 工具安装失败。请手动安装以下包: ${MISSING_TOOLS[*]}${NC}"
-            exit 1
+        if [ "$PKG_MANAGER" = "apk" ]; then
+            if ! $INSTALL_CMD "${MISSING_TOOLS[@]}"; then
+                echo -e "${RED}✗ 工具安装失败。请手动安装以下包: ${MISSING_TOOLS[*]}${NC}"
+                exit 1
+            fi
+        else
+            if ! sudo $INSTALL_CMD "${MISSING_TOOLS[@]}"; then
+                echo -e "${RED}✗ 工具安装失败。请手动安装以下包: ${MISSING_TOOLS[*]}${NC}"
+                exit 1
+            fi
         fi
     fi
 }
@@ -352,22 +365,42 @@ adjust_swappiness() {
 stress_test() {
     echo -e "${BLUE}正在准备内存压力测试...${NC}"
     
-    # 检查是否安装stress
-    if ! command -v stress &> /dev/null; then
-        echo -e "${RED}✗ 未找到stress工具，是否要安装？（y/n）${NC}"
-        read -r INSTALL_CHOICE
-        if [[ $INSTALL_CHOICE =~ ^[Yy]$ ]]; then
-            if command -v apt-get &> /dev/null; then
-                sudo apt-get install -y stress
-            elif command -v yum &> /dev/null; then
-                sudo yum install -y stress
-            else
-                echo -e "${RED}✗ 无法自动安装stress，请手动安装后重试。${NC}"
-                return
-            fi
-        else
-            return
-        fi
+    # 检查是否安装stress/stress-ng
+    if ! command -v stress &> /dev/null && ! command -v stress-ng &> /dev/null; then
+        echo -e "${YELLOW}未安装压力测试工具，正在安装...${NC}"
+        
+        case $PKG_MANAGER in
+            "apk")
+                if ! apk add stress-ng; then
+                    echo -e "${RED}✗ stress-ng 安装失败${NC}"
+                    return 1
+                fi
+                STRESS_CMD="stress-ng"
+                ;;
+            "apt-get")
+                if ! sudo apt-get install -y stress; then
+                    echo -e "${RED}✗ stress 安装失败${NC}"
+                    return 1
+                fi
+                STRESS_CMD="stress"
+                ;;
+            "yum")
+                if ! sudo yum install -y stress; then
+                    echo -e "${RED}✗ stress 安装失败${NC}"
+                    return 1
+                fi
+                STRESS_CMD="stress"
+                ;;
+            "pacman")
+                if ! sudo pacman -S --noconfirm stress; then
+                    echo -e "${RED}✗ stress 安装失败${NC}"
+                    return 1
+                fi
+                STRESS_CMD="stress"
+                ;;
+        esac
+    else
+        STRESS_CMD=$(command -v stress-ng || command -v stress)
     fi
 
     # 获取测试时间
@@ -407,7 +440,7 @@ stress_test() {
     echo -e "${YELLOW}即将开始内存压力测试，使用 ${MEM_SIZE_GB} GB 内存（${MEM_PERCENT}%系统内存），持续${TEST_TIME}秒${NC}"
     
     # 运行压力测试
-    timeout ${TEST_TIME}s stress --vm-bytes ${MEM_SIZE} --vm-keep -m 1 &
+    timeout ${TEST_TIME}s $STRESS_CMD --vm-bytes ${MEM_SIZE} --vm-keep -m 1 &
     STRESS_PID=$!
     
     # 获取初始CPU时间
