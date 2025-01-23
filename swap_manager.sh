@@ -177,13 +177,10 @@ create_swap() {
         echo -e "${YELLOW}⚠️ 输入值无效，请输入100到5120之间的整数。${NC}"
     done
 
-    # 将MB转换为字节用于检查磁盘空间
-    SWAP_SIZE_BYTES=$((SWAP_SIZE * 1024 * 1024))
-    
     # 检查磁盘空间是否足够(以MB为单位进行比较)
-    DISK_SPACE=$(df -BM / | awk 'NR==2 {print $4}' | tr -d 'M')
+    DISK_SPACE=$(df -m / | awk 'NR==2 {print $4}')
     if (( DISK_SPACE < SWAP_SIZE )); then
-        echo -e "${YELLOW}⚠️ 磁盘空间不足，无法创建 ${SWAP_SIZE}MB 的交换文件。${NC}"
+        echo -e "${YELLOW}⚠️ 磁盘空间不足，可用空间: ${DISK_SPACE}MB，需要: ${SWAP_SIZE}MB。${NC}"
         return
     fi
 
