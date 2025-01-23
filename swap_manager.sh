@@ -7,6 +7,16 @@ YELLOW='\033[0;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # 重置颜色
 
+# 检查是否为root用户，如果不是则使用sudo重新运行
+if [ "$EUID" -ne 0 ]; then
+    if command -v sudo >/dev/null 2>&1; then
+        exec sudo "$0" "$@"
+    else
+        echo -e "${RED}✗ 此脚本需要root权限运行。请使用sudo或以root用户运行。${NC}"
+        exit 1
+    fi
+fi
+
 # 检查并安装必要依赖
 check_dependencies() {
     if ! command -v bc &> /dev/null; then
@@ -24,12 +34,6 @@ check_dependencies() {
 
 # 在脚本开始处调用
 check_dependencies
-
-# 检查是否以 root 用户运行
-if [ "$EUID" -ne 0 ]; then
-    echo -e "${RED}✗ 请以 root 用户运行此脚本。${NC}"
-    exit 1
-fi
 
 # 检查系统是否支持交换文件
 if ! swapon --version &>/dev/null; then
