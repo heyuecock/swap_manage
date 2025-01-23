@@ -15,7 +15,11 @@
 ## 📥 安装
 
 ```
-sudo wget -qO swap_manager.sh https://raw.githubusercontent.com/heyuecock/swap_manage/refs/heads/main/swap_manager.sh && sudo bash swap_manager.sh
+sudo wget -qO /usr/local/bin/swap https://raw.githubusercontent.com/heyuecock/swap_manage/refs/heads/main/swap_manager.sh && sudo chmod +x /usr/local/bin/swap
+```
+安装完成后，直接输入以下命令即可运行：
+```
+swap
 ```
 
 ### 主要功能
