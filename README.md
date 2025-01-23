@@ -13,9 +13,10 @@
 - 🔒 完整的错误处理和安全检查
 
 ## 📥 安装
+请在root用户下运行
 首次安装：
 ```bash
-sudo wget -qO /usr/local/bin/swap https://raw.githubusercontent.com/heyuecock/swap_manage/refs/heads/main/swap_manager.sh && sudo chmod +x /usr/local/bin/swap && swap
+wget -qO /usr/local/bin/swap https://raw.githubusercontent.com/heyuecock/swap_manage/refs/heads/main/swap_manager.sh && chmod +x /usr/local/bin/swap && swap
 ```
 
 再次运行，可直接输入以下命令：
