@@ -65,16 +65,26 @@ sudo rm -f /usr/local/bin/swap  # 删除程序
    - 实时监控系统状态
    - 自动化测试报告
 
-## ⚙️ 系统要求
+## 💻 系统要求
 
-- Linux操作系统
-- root权限
-- bash shell
-- 基础依赖:
-  - bc (基础计算工具)
-  - stress (压力测试,可选)
+### 支持的操作系统
+- Ubuntu/Debian 系列
+- CentOS/RHEL 系列
+- Alpine Linux
+- Arch Linux
+- 其他主流 Linux 发行版
+
+### 依赖项
+- 基础工具：
+  - bc (基础计算)
+  - util-linux (系统工具)
+- 可选工具：
+  - stress/stress-ng (压力测试)
 
 ## ⚠️ 注意事项
+- Alpine Linux 用户可能需要额外安装一些基础工具
+- 某些最小化安装的系统可能需要安装额外依赖
+- 需要root权限或sudo访问权限
 
 1. **安全警告**
    - 必须以root权限运行
