@@ -15,7 +15,7 @@
 ## 📥 安装
 
 ```
-sudo apt install -y dos2unix && wget -qO- https://sh.beyond.pp.ua/swap-manager/swap_manager.sh > swap_manager.sh && dos2unix swap_manager.sh && bash swap_manager.sh
+sudo apt install -y dos2unix && wget -qO- https://raw.githubusercontent.com/heyuecock/swap_manage/refs/heads/main/swap_manager.sh > swap_manager.sh && dos2unix swap_manager.sh && bash swap_manager.sh
 ```
 
 ### 主要功能
