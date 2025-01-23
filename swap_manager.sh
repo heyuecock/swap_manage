@@ -178,9 +178,16 @@ create_swap() {
     done
 
     # 检查磁盘空间是否足够(以MB为单位进行比较)
-    DISK_SPACE=$(df -m / | awk 'NR==2 {print $4}')
+    DISK_SPACE=$(df -BM / | awk 'NR==2 {print $4}' | tr -d 'M')
+    echo -e "${BLUE}当前可用磁盘空间: ${DISK_SPACE}MB${NC}"
+    
+    if [ -z "$DISK_SPACE" ] || ! [[ "$DISK_SPACE" =~ ^[0-9]+$ ]]; then
+        echo -e "${RED}✗ 无法获取磁盘空间信息${NC}"
+        return
+    fi
+    
     if (( DISK_SPACE < SWAP_SIZE )); then
-        echo -e "${YELLOW}⚠️ 磁盘空间不足，可用空间: ${DISK_SPACE}MB，需要: ${SWAP_SIZE}MB。${NC}"
+        echo -e "${YELLOW}⚠️ 磁盘空间不足，可用空间: ${DISK_SPACE}MB，需要: ${SWAP_SIZE}MB${NC}"
         return
     fi
 
