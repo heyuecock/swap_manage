@@ -13,12 +13,12 @@
 - 🔒 完整的错误处理和安全检查
 
 ## 📥 安装
-
-```
+```bash
 sudo wget -qO /usr/local/bin/swap https://raw.githubusercontent.com/heyuecock/swap_manage/refs/heads/main/swap_manager.sh && sudo chmod +x /usr/local/bin/swap
 ```
+
 安装完成后，直接输入以下命令即可运行：
-```
+```bash
 swap
 ```
 
