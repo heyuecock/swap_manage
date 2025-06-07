@@ -115,6 +115,3 @@ A: Generally recommended to set it to 1-2 times the physical memory, but adjust 
 
 Q: How to adjust the swappiness value?
 A: Recommended setting for servers: 10-30, for desktop systems: 30-60. 
-
-
-[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
