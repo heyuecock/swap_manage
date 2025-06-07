@@ -893,6 +893,8 @@ uninstall_program() {
                     echo -e "${BLUE}正在删除程序...${NC}"
                 fi
                 sudo rm -f /usr/local/bin/swap
+                # Delete language settings file / 删除语言设置文件
+                sudo rm -f /etc/swap_manager_lang
                 if [ "$LANG" = "en" ]; then
                     echo -e "${GREEN}✓ Program deleted successfully${NC}"
                 else
@@ -937,13 +939,14 @@ uninstall_program() {
                     fi
                 fi
                 
-                # Delete program / 删除程序
+                # Delete program and language settings / 删除程序和语言设置
                 if [ "$LANG" = "en" ]; then
                     echo -e "${BLUE}Deleting program...${NC}"
                 else
                     echo -e "${BLUE}正在删除程序...${NC}"
                 fi
                 sudo rm -f /usr/local/bin/swap
+                sudo rm -f /etc/swap_manager_lang
                 if [ "$LANG" = "en" ]; then
                     echo -e "${GREEN}✓ Program deleted successfully${NC}"
                 else
@@ -1051,7 +1054,7 @@ while true; do
             if [ "$LANG" = "en" ]; then
                 echo -e "${GREEN}Thank you for using Swap Manager. Goodbye!${NC}"
             else
-                echo -e "${GREEN}感谢使用交换空间管理器。再见！${NC}"
+                echo -e "${GREEN}感谢使用swap管理器。再见！${NC}"
             fi
             break 
             ;;
