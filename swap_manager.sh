@@ -9,182 +9,41 @@ NC='\033[0m' # Reset color / 重置颜色
 
 # Language settings / 语言设置
 LANG_FILE="/etc/swap_manager_lang"
-if [ -f "$LANG_FILE" ]; then
-    LANG=$(cat "$LANG_FILE")
-else
-    echo -e "${BLUE}Please select language / 请选择语言：${NC}"
-    echo -e "1. English"
-    echo -e "2. 中文"
-    read -p "Enter your choice (1-2) / 请输入选项 (1-2): " lang_choice
-    case $lang_choice in
-        1) LANG="en" ;;
-        2) LANG="zh" ;;
-        *) LANG="en" ;;
-    esac
-    # 尝试保存语言设置到/etc目录
-    if ! echo "$LANG" | sudo tee "$LANG_FILE" > /dev/null; then
-        # 如果保存到/etc失败，则尝试保存到用户主目录
-        LANG_FILE="$HOME/.swap_manager_lang"
-        echo "$LANG" > "$LANG_FILE"
-    fi
-fi
+DEFAULT_LANG="en"
 
-# Define language texts / 定义语言文本
-declare -A TEXT
-if [ "$LANG" = "en" ]; then
-    TEXT=(
-        ["menu_title"]="========== Swap File Management Menu =========="
-        ["create_swap"]="1. Create Swap File"
-        ["delete_swap"]="2. Delete Swap File"
-        ["view_swap"]="3. View Current Swap Information"
-        ["adjust_swappiness"]="4. Adjust Memory Swappiness"
-        ["stress_test"]="5. Memory Stress Test"
-        ["uninstall"]="6. Uninstall Program"
-        ["exit"]="7. Exit"
-        ["menu_footer"]="====================================="
-        ["invalid_option"]="Invalid option, please try again."
-        ["swap_size_prompt"]="Enter swap file size (MB, range 100-5120, default 1024MB):"
-        ["invalid_size"]="Invalid input, please enter an integer between 100 and 5120."
-        ["disk_space"]="Current available disk space:"
-        ["insufficient_space"]="Insufficient disk space, available:"
-        ["needed_space"]="Required:"
-        ["creating_swap"]="Creating"
-        ["swap_file"]="swap file..."
-        ["formatting"]="Formatting swap file..."
-        ["enabling"]="Enabling swap file..."
-        ["success"]="Virtual memory successfully created and enabled. Current memory and swap information:"
-        ["deleting_swap"]="Deleting swap file"
-        ["swap_not_found"]="Swap file not found"
-        ["swap_deleted"]="Swap file deleted"
-        ["current_swappiness"]="Current memory swappiness value:"
-        ["swappiness_desc"]="Lower value means less swap usage; higher value means more swap usage."
-        ["recommended_value"]="Recommended value: 10-60"
-        ["enter_new_value"]="Enter new memory swappiness value (0-100, recommended 10-60):"
-        ["invalid_swappiness"]="Invalid input, please enter an integer between 0 and 100."
-        ["modify_method"]="Please select modification method:"
-        ["temp_modify"]="1. Temporary modification (effective immediately, reset after reboot)"
-        ["perm_modify"]="2. Permanent modification (effective immediately and persists after reboot)"
-        ["enter_option"]="Enter option (1-2):"
-        ["temp_modified"]="Memory swappiness value temporarily modified to"
-        ["perm_modified"]="Memory swappiness value permanently modified to"
-        ["invalid_method"]="Invalid option, no changes made."
-        ["preparing_test"]="Preparing memory stress test..."
-        ["installing_tools"]="Installing stress testing tools..."
-        ["enter_test_time"]="Enter stress test duration (seconds, default 5):"
-        ["invalid_time"]="Invalid input, please enter a positive integer (seconds)."
-        ["enter_mem_percent"]="Enter memory usage percentage relative to system memory (10-1000, default 90):"
-        ["invalid_percent"]="Invalid input, please enter an integer between 10 and 1000."
-        ["test_starting"]="Starting memory stress test, using"
-        ["system_memory"]="system memory, duration"
-        ["seconds"]="seconds"
-        ["monitoring"]="Monitoring memory and swap space usage:"
-        ["note"]="Note: When using more than 100% system memory, OOM Killer may terminate the process."
-        ["test_ended"]="Stress test completed"
-        ["uninstall_preparing"]="Preparing to uninstall..."
-        ["uninstall_options"]="Please select uninstall option:"
-        ["delete_swap_only"]="1. Delete swap file only"
-        ["delete_program_only"]="2. Delete program only"
-        ["delete_all"]="3. Delete swap file and program"
-        ["cancel"]="4. Cancel"
-        ["enter_option_uninstall"]="Enter option (1-4):"
-        ["confirm_delete_swap"]="Are you sure you want to delete the swap file? (y/n):"
-        ["confirm_delete_program"]="Are you sure you want to delete the program? (y/n):"
-        ["confirm_delete_all"]="Are you sure you want to delete the swap file and program? (y/n):"
-        ["deleting"]="Deleting"
-        ["program"]="program..."
-        ["program_deleted"]="Program deleted"
-        ["uninstall_cancelled"]="Uninstall cancelled"
-        ["not_root"]="Not running as root user."
-        ["sudo_not_found"]="sudo not detected."
-        ["alpine_instructions"]="On Alpine Linux, please use the following command:"
-        ["then_run"]="Then run with:"
-        ["system_not_supported"]="This system may not support swap functionality."
-        ["alpine_detected"]="Alpine Linux system detected"
-        ["missing_packages"]="Missing required packages:"
-        ["installing_packages"]="Installing required packages..."
-        ["packages_installed"]="Required packages installed successfully"
-        ["package_install_failed"]="Package installation failed, please run the following command manually:"
-        ["loading_kernel_module"]="Loading swap kernel module..."
-        ["fs_not_supported"]="Root filesystem does not support file creation, please check filesystem permissions."
-        ["swapon_not_supported"]="System does not support swapon command, cannot create swap file."
-    )
+# 检查语言文件是否存在且可读
+if [ -f "$LANG_FILE" ] && [ -r "$LANG_FILE" ]; then
+    LANG=$(cat "$LANG_FILE")
+    # 验证语言设置是否有效
+    if [ "$LANG" != "en" ] && [ "$LANG" != "zh" ]; then
+        LANG="$DEFAULT_LANG"
+    fi
 else
-    TEXT=(
-        ["menu_title"]="========== 交换文件管理菜单 =========="
-        ["create_swap"]="1. 创建交换文件"
-        ["delete_swap"]="2. 删除交换文件"
-        ["view_swap"]="3. 查看当前交换空间信息"
-        ["adjust_swappiness"]="4. 调整内存交换倾向性"
-        ["stress_test"]="5. 内存压力测试"
-        ["uninstall"]="6. 卸载程序"
-        ["exit"]="7. 退出"
-        ["menu_footer"]="====================================="
-        ["invalid_option"]="无效选项，请重新输入。"
-        ["swap_size_prompt"]="请输入交换文件大小（单位：MB，范围100-5120，默认1024MB）："
-        ["invalid_size"]="输入值无效，请输入100到5120之间的整数。"
-        ["disk_space"]="当前可用磁盘空间:"
-        ["insufficient_space"]="磁盘空间不足，可用空间:"
-        ["needed_space"]="需要:"
-        ["creating_swap"]="正在创建"
-        ["swap_file"]="的交换文件..."
-        ["formatting"]="正在格式化交换文件..."
-        ["enabling"]="正在启用交换文件..."
-        ["success"]="虚拟内存已成功创建并启用。当前内存和交换空间信息："
-        ["deleting_swap"]="正在删除交换文件"
-        ["swap_not_found"]="未找到交换文件"
-        ["swap_deleted"]="交换文件已删除"
-        ["current_swappiness"]="当前内存交换倾向性值："
-        ["swappiness_desc"]="值越低，越少使用交换空间；值越高，越多使用交换空间。"
-        ["recommended_value"]="推荐值：10-60"
-        ["enter_new_value"]="请输入新的内存交换倾向性值（0-100，推荐10-60）："
-        ["invalid_swappiness"]="输入值无效，请输入0到100之间的整数。"
-        ["modify_method"]="请选择修改方式："
-        ["temp_modify"]="1. 临时修改（立即生效，重启后失效）"
-        ["perm_modify"]="2. 永久修改（立即生效且重启后仍然有效）"
-        ["enter_option"]="请输入选项（1-2）："
-        ["temp_modified"]="内存交换倾向性值已临时修改为"
-        ["perm_modified"]="内存交换倾向性值已永久修改为"
-        ["invalid_method"]="无效选项，未进行任何修改。"
-        ["preparing_test"]="正在准备内存压力测试..."
-        ["installing_tools"]="正在安装压力测试工具..."
-        ["enter_test_time"]="请输入压力测试时间（单位：秒，默认5秒）："
-        ["invalid_time"]="输入值无效，请输入大于0的整数（单位：秒）。"
-        ["enter_mem_percent"]="请输入压测内存使用量，相对于系统内存的百分比（10-1000，默认90）："
-        ["invalid_percent"]="输入值无效，请输入10到1000之间的整数。"
-        ["test_starting"]="即将开始内存压力测试，使用"
-        ["system_memory"]="系统内存，持续"
-        ["seconds"]="秒"
-        ["monitoring"]="实时监控内存和交换空间使用情况："
-        ["note"]="注意：当使用超过100%系统内存时，可能会触发OOM Killer终止进程。"
-        ["test_ended"]="压力测试结束"
-        ["uninstall_preparing"]="准备卸载..."
-        ["uninstall_options"]="请选择卸载选项："
-        ["delete_swap_only"]="1. 仅删除交换文件"
-        ["delete_program_only"]="2. 仅删除程序"
-        ["delete_all"]="3. 删除交换文件和程序"
-        ["cancel"]="4. 取消"
-        ["enter_option_uninstall"]="请输入选项（1-4）："
-        ["confirm_delete_swap"]="确定要删除交换文件吗？(y/n):"
-        ["confirm_delete_program"]="确定要删除程序吗？(y/n):"
-        ["confirm_delete_all"]="确定要删除交换文件和程序吗？(y/n):"
-        ["deleting"]="正在删除"
-        ["program"]="程序..."
-        ["program_deleted"]="程序已删除"
-        ["uninstall_cancelled"]="取消卸载"
-        ["not_root"]="未检测到sudo。"
-        ["sudo_not_found"]="未检测到sudo。"
-        ["alpine_instructions"]="在Alpine Linux中，请使用以下命令："
-        ["then_run"]="然后使用以下命令运行："
-        ["system_not_supported"]="此系统可能不支持交换空间功能。"
-        ["alpine_detected"]="检测到Alpine Linux系统"
-        ["missing_packages"]="检测到缺少必要的包:"
-        ["installing_packages"]="正在自动安装必要的包..."
-        ["packages_installed"]="必要的包安装成功"
-        ["package_install_failed"]="包安装失败，请手动运行以下命令："
-        ["loading_kernel_module"]="正在加载swap内核模块..."
-        ["fs_not_supported"]="根文件系统不支持创建文件，请检查文件系统权限。"
-        ["swapon_not_supported"]="系统不支持 swapon 命令，无法创建交换文件。"
-    )
+    # 显示语言选择菜单
+    while true; do
+        echo -e "${BLUE}Please select language / 请选择语言：${NC}"
+        echo -e "1. English"
+        echo -e "2. 中文"
+        read -p "Enter your choice (1-2) / 请输入选项 (1-2): " lang_choice
+        
+        case $lang_choice in
+            1) LANG="en"; break ;;
+            2) LANG="zh"; break ;;
+            *) 
+                echo -e "${RED}Invalid choice, please try again. / 无效选项，请重试。${NC}"
+                continue 
+                ;;
+        esac
+    done
+
+    # 尝试保存语言设置
+    if ! echo "$LANG" | sudo tee "$LANG_FILE" > /dev/null 2>&1; then
+        # 如果保存到/etc失败，尝试保存到用户主目录
+        LANG_FILE="$HOME/.swap_manager_lang"
+        if ! echo "$LANG" > "$LANG_FILE" 2>/dev/null; then
+            echo -e "${YELLOW}Warning: Could not save language preference. / 警告：无法保存语言偏好设置。${NC}"
+        fi
+    fi
 fi
 
 # Check if running as root, if not try sudo or prompt for root / 检查是否为root用户，如果不是则尝试使用sudo或提示使用root
@@ -331,104 +190,222 @@ fi
 
 # Menu function (with colors) / 菜单函数（带颜色）
 show_menu() {
-    echo -e "\n${BLUE}${TEXT["menu_title"]}${NC}"
-    echo -e "${GREEN}${TEXT["create_swap"]}${NC}"
-    echo -e "${GREEN}${TEXT["delete_swap"]}${NC}"
-    echo -e "${GREEN}${TEXT["view_swap"]}${NC}"
-    echo -e "${GREEN}${TEXT["adjust_swappiness"]}${NC}"
-    echo -e "${GREEN}${TEXT["stress_test"]}${NC}"
-    echo -e "${RED}${TEXT["uninstall"]}${NC}"
-    echo -e "${RED}${TEXT["exit"]}${NC}"
-    echo -e "${BLUE}${TEXT["menu_footer"]}${NC}\n"
+    if [ "$LANG" = "en" ]; then
+        echo -e "\n${BLUE}========== Swap File Management Menu ==========${NC}"
+        echo -e "${GREEN}1. Create Swap File${NC}"
+        echo -e "${GREEN}2. Delete Swap File${NC}"
+        echo -e "${GREEN}3. View Current Swap Information${NC}"
+        echo -e "${GREEN}4. Adjust Memory Swappiness${NC}"
+        echo -e "${GREEN}5. Memory Stress Test${NC}"
+        echo -e "${RED}6. Uninstall Program${NC}"
+        echo -e "${RED}7. Exit${NC}"
+        echo -e "${BLUE}=====================================${NC}\n"
+    else
+        echo -e "\n${BLUE}========== 交换文件管理菜单 ==========${NC}"
+        echo -e "${GREEN}1. 创建交换文件${NC}"
+        echo -e "${GREEN}2. 删除交换文件${NC}"
+        echo -e "${GREEN}3. 查看当前交换空间信息${NC}"
+        echo -e "${GREEN}4. 调整内存交换倾向性${NC}"
+        echo -e "${GREEN}5. 内存压力测试${NC}"
+        echo -e "${RED}6. 卸载程序${NC}"
+        echo -e "${RED}7. 退出${NC}"
+        echo -e "${BLUE}=====================================${NC}\n"
+    fi
 }
 
 # Create swap file / 创建交换文件
 create_swap() {
-    while true; do
-        read -p "${TEXT["swap_size_prompt"]}" SWAP_SIZE
-        SWAP_SIZE=${SWAP_SIZE:-1024}  # If user didn't input, default to 1024MB
-        
-        # Validate input is legal
-        if [[ $SWAP_SIZE =~ ^[0-9]+$ ]]; then
-            if (( SWAP_SIZE >= 100 && SWAP_SIZE <= 5120 )); then
-                break
-            fi
+    if [ "$LANG" = "en" ]; then
+        echo -e "${BLUE}Creating swap file...${NC}"
+        echo -e "${YELLOW}Please enter the size of swap file in MB (default: 1024)${NC}"
+        echo -e "${YELLOW}Recommended: 100-5120 MB${NC}"
+        read -p "Enter swap file size (MB): " SWAP_SIZE
+    else
+        echo -e "${BLUE}正在创建交换文件...${NC}"
+        echo -e "${YELLOW}请输入交换文件大小（MB）（默认：1024）${NC}"
+        echo -e "${YELLOW}推荐：100-5120 MB${NC}"
+        read -p "请输入交换文件大小（MB）：" SWAP_SIZE
+    fi
+    
+    SWAP_SIZE=${SWAP_SIZE:-1024}  # If user didn't input, default to 1024MB
+    
+    # Validate input is legal / 验证输入是否合法
+    if ! [[ $SWAP_SIZE =~ ^[0-9]+$ ]] || [ $SWAP_SIZE -lt 100 ] || [ $SWAP_SIZE -gt 5120 ]; then
+        if [ "$LANG" = "en" ]; then
+            echo -e "${RED}✗ Invalid size, using default 1024MB${NC}"
+        else
+            echo -e "${RED}✗ 无效的大小，使用默认值1024MB${NC}"
         fi
-        echo -e "${YELLOW}${TEXT["invalid_size"]}${NC}"
-    done
+        SWAP_SIZE=1024
+    fi
 
-    # Check disk space is enough (in MB for comparison)
+    # Check disk space is enough / 检查磁盘空间是否足够
     DISK_SPACE=$(df -BM / | awk 'NR==2 {print $4}' | tr -d 'M')
-    echo -e "${BLUE}${TEXT["disk_space"]} ${DISK_SPACE}MB${NC}"
+    if [ "$LANG" = "en" ]; then
+        echo -e "${BLUE}Available disk space: ${DISK_SPACE}MB${NC}"
+    else
+        echo -e "${BLUE}可用磁盘空间：${DISK_SPACE}MB${NC}"
+    fi
     
     if [ -z "$DISK_SPACE" ] || ! [[ "$DISK_SPACE" =~ ^[0-9]+$ ]]; then
-        echo -e "${RED}✗ ${TEXT["disk_space"]}${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${RED}✗ Failed to get disk space information${NC}"
+        else
+            echo -e "${RED}✗ 获取磁盘空间信息失败${NC}"
+        fi
         return
     fi
     
     if (( DISK_SPACE < SWAP_SIZE )); then
-        echo -e "${YELLOW}⚠️ ${TEXT["insufficient_space"]} ${DISK_SPACE}MB，${TEXT["needed_space"]} ${SWAP_SIZE}MB${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${YELLOW}⚠️ Insufficient disk space: ${DISK_SPACE}MB available, ${SWAP_SIZE}MB needed${NC}"
+        else
+            echo -e "${YELLOW}⚠️ 磁盘空间不足：可用${DISK_SPACE}MB，需要${SWAP_SIZE}MB${NC}"
+        fi
         return
     fi
 
-    # Check if old swap file exists
+    # Check if old swap file exists / 检查是否存在旧的交换文件
     if [ -f /swapfile ]; then
-        echo -e "${BLUE}${TEXT["deleting_swap"]} /swapfile...${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${BLUE}Deleting existing swap file...${NC}"
+        else
+            echo -e "${BLUE}正在删除现有交换文件...${NC}"
+        fi
         sudo swapoff /swapfile 2>/dev/null
         sudo rm -f /swapfile
     fi
 
-    # Create swap file
-    echo -e "${BLUE}${TEXT["creating_swap"]} ${SWAP_SIZE}MB ${TEXT["swap_file"]}${NC}"
+    # Create swap file / 创建交换文件
+    if [ "$LANG" = "en" ]; then
+        echo -e "${BLUE}Creating ${SWAP_SIZE}MB swap file...${NC}"
+    else
+        echo -e "${BLUE}正在创建${SWAP_SIZE}MB交换文件...${NC}"
+    fi
     sudo fallocate -l ${SWAP_SIZE}M /swapfile
     if [ $? -ne 0 ]; then
-        echo -e "${RED}✗ ${TEXT["creating_swap"]}${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${RED}✗ Failed to create swap file${NC}"
+        else
+            echo -e "${RED}✗ 创建交换文件失败${NC}"
+        fi
         return
     fi
 
-    # Set file permissions
+    # Set file permissions / 设置文件权限
     sudo chmod 600 /swapfile
 
-    # Format swap file
-    echo -e "${BLUE}${TEXT["formatting"]}${NC}"
+    # Format swap file / 格式化交换文件
+    if [ "$LANG" = "en" ]; then
+        echo -e "${BLUE}Formatting swap file...${NC}"
+    else
+        echo -e "${BLUE}正在格式化交换文件...${NC}"
+    fi
     sudo mkswap /swapfile
     if [ $? -ne 0 ]; then
-        echo -e "${RED}✗ ${TEXT["formatting"]}${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${RED}✗ Failed to format swap file${NC}"
+        else
+            echo -e "${RED}✗ 格式化交换文件失败${NC}"
+        fi
         sudo rm -f /swapfile
         return
     fi
 
-    # Enable swap file
-    echo -e "${BLUE}${TEXT["enabling"]}${NC}"
+    # Enable swap file / 启用交换文件
+    if [ "$LANG" = "en" ]; then
+        echo -e "${BLUE}Enabling swap file...${NC}"
+    else
+        echo -e "${BLUE}正在启用交换文件...${NC}"
+    fi
     sudo swapon /swapfile
     if [ $? -ne 0 ]; then
-        echo -e "${RED}✗ ${TEXT["enabling"]}${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${RED}✗ Failed to enable swap file${NC}"
+        else
+            echo -e "${RED}✗ 启用交换文件失败${NC}"
+        fi
         sudo rm -f /swapfile
         return
     fi
 
-    # Permanent effect
+    # Permanent effect / 永久生效
     if ! grep -q '/swapfile' /etc/fstab; then
-        echo -e "${BLUE}${TEXT["enabling"]}${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${BLUE}Making swap file permanent...${NC}"
+        else
+            echo -e "${BLUE}正在使交换文件永久生效...${NC}"
+        fi
         echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
     fi
 
-    # Output result
-    echo -e "${GREEN}✓ ${TEXT["success"]}${NC}"
+    # Output result / 输出结果
+    if [ "$LANG" = "en" ]; then
+        echo -e "${GREEN}✓ Swap file created successfully${NC}"
+        echo -e "${BLUE}Current memory status:${NC}"
+    else
+        echo -e "${GREEN}✓ 交换文件创建成功${NC}"
+        echo -e "${BLUE}当前内存状态：${NC}"
+    fi
     free -h
 }
 
 # Delete swap file / 删除交换文件
 delete_swap() {
     if [ -f /swapfile ]; then
-        echo -e "${BLUE}[$(date +"%Y-%m-%d %H:%M:%S")] INFO: ${TEXT["deleting_swap"]} /swapfile...${NC}"
-        sudo swapoff /swapfile 2>/dev/null
-        sudo rm -f /swapfile
-        # Remove swap file configuration from /etc/fstab
-        sudo sed -i '/\/swapfile/d' /etc/fstab
-        echo -e "${GREEN}✓ ${TEXT["swap_deleted"]}${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${BLUE}Deleting swap file...${NC}"
+            echo -e "${YELLOW}This will remove the swap file and disable swap space.${NC}"
+            read -p "Are you sure you want to continue? (y/N): " confirm
+        else
+            echo -e "${BLUE}正在删除交换文件...${NC}"
+            echo -e "${YELLOW}这将删除交换文件并禁用交换空间。${NC}"
+            read -p "确定要继续吗？(y/N)：" confirm
+        fi
+        
+        if [[ $confirm =~ ^[Yy]$ ]]; then
+            if [ "$LANG" = "en" ]; then
+                echo -e "${BLUE}Disabling swap file...${NC}"
+            else
+                echo -e "${BLUE}正在禁用交换文件...${NC}"
+            fi
+            sudo swapoff /swapfile 2>/dev/null
+            
+            if [ "$LANG" = "en" ]; then
+                echo -e "${BLUE}Removing swap file...${NC}"
+            else
+                echo -e "${BLUE}正在删除交换文件...${NC}"
+            fi
+            sudo rm -f /swapfile
+            
+            if [ "$LANG" = "en" ]; then
+                echo -e "${BLUE}Removing swap configuration...${NC}"
+            else
+                echo -e "${BLUE}正在删除交换配置...${NC}"
+            fi
+            sudo sed -i '/\/swapfile/d' /etc/fstab
+            
+            if [ "$LANG" = "en" ]; then
+                echo -e "${GREEN}✓ Swap file deleted successfully${NC}"
+                echo -e "${BLUE}Current memory status:${NC}"
+            else
+                echo -e "${GREEN}✓ 交换文件删除成功${NC}"
+                echo -e "${BLUE}当前内存状态：${NC}"
+            fi
+            free -h
+        else
+            if [ "$LANG" = "en" ]; then
+                echo -e "${BLUE}Operation cancelled${NC}"
+            else
+                echo -e "${BLUE}操作已取消${NC}"
+            fi
+        fi
     else
-        echo -e "${BLUE}⚠️ ${TEXT["swap_not_found"]} /swapfile${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${BLUE}No swap file found at /swapfile${NC}"
+        else
+            echo -e "${BLUE}未找到交换文件 /swapfile${NC}"
+        fi
     fi
 }
 
@@ -517,87 +494,140 @@ view_swap() {
 # Adjust memory swappiness / 调整内存交换倾向性
 adjust_swappiness() {
     CURRENT_SWAPPINESS=$(cat /proc/sys/vm/swappiness)
-    # Display brief description
-    echo -e "${YELLOW}${TEXT["current_swappiness"]}${CURRENT_SWAPPINESS}${NC}"
-    echo -e "${YELLOW}${TEXT["swappiness_desc"]}${NC}"
-    echo -e "${YELLOW}${TEXT["recommended_value"]}${NC}"
+    # Display brief description / 显示简要说明
+    if [ "$LANG" = "en" ]; then
+        echo -e "${YELLOW}Current memory swappiness value: ${CURRENT_SWAPPINESS}${NC}"
+        echo -e "${YELLOW}Lower value means less swap usage; higher value means more swap usage.${NC}"
+        echo -e "${YELLOW}Recommended value: 10-60${NC}"
+        read -p "Enter new memory swappiness value (0-100, recommended 10-60): " SWAPPINESS
+    else
+        echo -e "${YELLOW}当前内存交换倾向性值：${CURRENT_SWAPPINESS}${NC}"
+        echo -e "${YELLOW}值越低，越少使用交换空间；值越高，越多使用交换空间。${NC}"
+        echo -e "${YELLOW}推荐值：10-60${NC}"
+        read -p "请输入新的内存交换倾向性值（0-100，推荐10-60）：" SWAPPINESS
+    fi
     
-    # Get new value
-    while true; do
-        read -p "${TEXT["enter_new_value"]}" SWAPPINESS
-        SWAPPINESS=${SWAPPINESS:-$CURRENT_SWAPPINESS}  # If user didn't input, keep current value
-        
-        # Validate input is legal
-        if [[ $SWAPPINESS =~ ^[0-9]+$ ]] && [ $SWAPPINESS -ge 0 ] && [ $SWAPPINESS -le 100 ]; then
-            break
+    SWAPPINESS=${SWAPPINESS:-$CURRENT_SWAPPINESS}  # If user didn't input, keep current value
+    
+    # Validate input is legal / 验证输入是否合法
+    if [[ $SWAPPINESS =~ ^[0-9]+$ ]] && [ $SWAPPINESS -ge 0 ] && [ $SWAPPINESS -le 100 ]; then
+        # Let user choose modification method / 让用户选择修改方式
+        if [ "$LANG" = "en" ]; then
+            echo -e "\n${BLUE}Please select modification method:${NC}"
+            echo -e "${YELLOW}1. Temporary modification (effective immediately, reset after reboot)${NC}"
+            echo -e "${YELLOW}2. Permanent modification (effective immediately and persists after reboot)${NC}"
+            read -p "Enter option (1-2): " MODE
         else
-            echo -e "${RED}⚠️ ${TEXT["invalid_swappiness"]}${NC}"
+            echo -e "\n${BLUE}请选择修改方式：${NC}"
+            echo -e "${YELLOW}1. 临时修改（立即生效，重启后失效）${NC}"
+            echo -e "${YELLOW}2. 永久修改（立即生效且重启后仍然有效）${NC}"
+            read -p "请输入选项（1-2）：" MODE
         fi
-    done
 
-    # Let user choose modification method
-    echo -e "\n${BLUE}${TEXT["modify_method"]}${NC}"
-    echo -e "${YELLOW}${TEXT["temp_modify"]}${NC}"
-    echo -e "${YELLOW}${TEXT["perm_modify"]}${NC}"
-    read -p "${TEXT["enter_option"]}" MODE
-
-    case $MODE in
-        1)
-            # Temporary modification (effective immediately)
-            sudo sysctl vm.swappiness=$SWAPPINESS
-            echo -e "${GREEN}✓ ${TEXT["temp_modified"]} $SWAPPINESS${NC}"
-            ;;
-        2)
-            # Permanent modification and effective immediately
-            CONFIG_FILE="/etc/sysctl.conf"
-            if grep -q '^vm.swappiness=' $CONFIG_FILE; then
-                sudo sed -i "s/^vm.swappiness=.*/vm.swappiness=$SWAPPINESS/" $CONFIG_FILE
-            else
-                echo "vm.swappiness=$SWAPPINESS" | sudo tee -a $CONFIG_FILE > /dev/null
-            fi
-            # Effective immediately
-            sudo sysctl -p
-            echo -e "${GREEN}✓ ${TEXT["perm_modified"]} $SWAPPINESS${NC}"
-            ;;
-        *)
-            echo -e "${RED}⚠️ ${TEXT["invalid_method"]}${NC}"
-            ;;
-    esac
+        case $MODE in
+            1)
+                # Temporary modification (effective immediately) / 临时修改（立即生效）
+                sudo sysctl vm.swappiness=$SWAPPINESS
+                if [ "$LANG" = "en" ]; then
+                    echo -e "${GREEN}✓ Memory swappiness value temporarily modified to $SWAPPINESS${NC}"
+                else
+                    echo -e "${GREEN}✓ 内存交换倾向性值已临时修改为 $SWAPPINESS${NC}"
+                fi
+                ;;
+            2)
+                # Permanent modification and effective immediately / 永久修改并立即生效
+                CONFIG_FILE="/etc/sysctl.conf"
+                if grep -q '^vm.swappiness=' $CONFIG_FILE; then
+                    sudo sed -i "s/^vm.swappiness=.*/vm.swappiness=$SWAPPINESS/" $CONFIG_FILE
+                else
+                    echo "vm.swappiness=$SWAPPINESS" | sudo tee -a $CONFIG_FILE > /dev/null
+                fi
+                # Effective immediately / 立即生效
+                sudo sysctl -p
+                if [ "$LANG" = "en" ]; then
+                    echo -e "${GREEN}✓ Memory swappiness value permanently modified to $SWAPPINESS${NC}"
+                else
+                    echo -e "${GREEN}✓ 内存交换倾向性值已永久修改为 $SWAPPINESS${NC}"
+                fi
+                ;;
+            *)
+                if [ "$LANG" = "en" ]; then
+                    echo -e "${RED}✗ Invalid option, no changes made.${NC}"
+                else
+                    echo -e "${RED}✗ 无效选项，未进行任何修改。${NC}"
+                fi
+                ;;
+        esac
+    else
+        if [ "$LANG" = "en" ]; then
+            echo -e "${RED}✗ Invalid input, please enter an integer between 0 and 100.${NC}"
+        else
+            echo -e "${RED}✗ 输入值无效，请输入0到100之间的整数。${NC}"
+        fi
+    fi
 }
 
 # Memory stress test / 内存压力测试
 stress_test() {
-    echo -e "${BLUE}${TEXT["preparing_test"]}${NC}"
+    if [ "$LANG" = "en" ]; then
+        echo -e "${BLUE}Preparing memory stress test...${NC}"
+        echo -e "${YELLOW}This test will simulate high memory usage to test your system's performance.${NC}"
+        echo -e "${YELLOW}Please make sure you have saved all your work before proceeding.${NC}"
+    else
+        echo -e "${BLUE}正在准备内存压力测试...${NC}"
+        echo -e "${YELLOW}此测试将模拟高内存使用情况来测试系统性能。${NC}"
+        echo -e "${YELLOW}请确保在继续之前已保存所有工作。${NC}"
+    fi
     
-    # Check if stress/stress-ng is installed
+    # Check if stress/stress-ng is installed / 检查是否安装了stress/stress-ng
     if ! command -v stress &> /dev/null && ! command -v stress-ng &> /dev/null; then
-        echo -e "${YELLOW}${TEXT["installing_tools"]}${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${YELLOW}Installing stress testing tool...${NC}"
+        else
+            echo -e "${YELLOW}正在安装压力测试工具...${NC}"
+        fi
         
         case $PKG_MANAGER in
             "apk")
                 if ! apk add stress-ng; then
-                    echo -e "${RED}✗ stress-ng ${TEXT["package_install_failed"]}${NC}"
+                    if [ "$LANG" = "en" ]; then
+                        echo -e "${RED}✗ Failed to install stress-ng${NC}"
+                    else
+                        echo -e "${RED}✗ 安装stress-ng失败${NC}"
+                    fi
                     return 1
                 fi
                 STRESS_CMD="stress-ng"
                 ;;
             "apt-get")
                 if ! sudo apt-get install -y stress; then
-                    echo -e "${RED}✗ stress ${TEXT["package_install_failed"]}${NC}"
+                    if [ "$LANG" = "en" ]; then
+                        echo -e "${RED}✗ Failed to install stress${NC}"
+                    else
+                        echo -e "${RED}✗ 安装stress失败${NC}"
+                    fi
                     return 1
                 fi
                 STRESS_CMD="stress"
                 ;;
             "yum")
                 if ! sudo yum install -y stress; then
-                    echo -e "${RED}✗ stress ${TEXT["package_install_failed"]}${NC}"
+                    if [ "$LANG" = "en" ]; then
+                        echo -e "${RED}✗ Failed to install stress${NC}"
+                    else
+                        echo -e "${RED}✗ 安装stress失败${NC}"
+                    fi
                     return 1
                 fi
                 STRESS_CMD="stress"
                 ;;
             "pacman")
                 if ! sudo pacman -S --noconfirm stress; then
-                    echo -e "${RED}✗ stress ${TEXT["package_install_failed"]}${NC}"
+                    if [ "$LANG" = "en" ]; then
+                        echo -e "${RED}✗ Failed to install stress${NC}"
+                    else
+                        echo -e "${RED}✗ 安装stress失败${NC}"
+                    fi
                     return 1
                 fi
                 STRESS_CMD="stress"
@@ -607,47 +637,83 @@ stress_test() {
         STRESS_CMD=$(command -v stress-ng || command -v stress)
     fi
 
-    # Get test time
-    while true; do
-        read -p "${TEXT["enter_test_time"]}" TEST_TIME
-        TEST_TIME=${TEST_TIME:-5}  # If user didn't input, default to 5 seconds
-        
-        # Validate input is legal
-        if [[ $TEST_TIME =~ ^[0-9]+$ ]] && [ $TEST_TIME -gt 0 ]; then
-            break
+    # Get test time / 获取测试时间
+    if [ "$LANG" = "en" ]; then
+        echo -e "\n${BLUE}Test Duration:${NC}"
+        echo -e "${YELLOW}Please enter the test duration in seconds (default: 5)${NC}"
+        echo -e "${YELLOW}Recommended: 5-30 seconds${NC}"
+        read -p "Enter test duration (seconds): " TEST_TIME
+    else
+        echo -e "\n${BLUE}测试时长：${NC}"
+        echo -e "${YELLOW}请输入测试时长（秒）（默认：5）${NC}"
+        echo -e "${YELLOW}推荐：5-30秒${NC}"
+        read -p "请输入测试时长（秒）：" TEST_TIME
+    fi
+    
+    TEST_TIME=${TEST_TIME:-5}  # If user didn't input, default to 5 seconds
+    
+    # Validate input is legal / 验证输入是否合法
+    if ! [[ $TEST_TIME =~ ^[0-9]+$ ]] || [ $TEST_TIME -le 0 ]; then
+        if [ "$LANG" = "en" ]; then
+            echo -e "${RED}✗ Invalid time value, using default 5 seconds${NC}"
         else
-            echo -e "${RED}✗ ${TEXT["invalid_time"]}${NC}"
+            echo -e "${RED}✗ 无效的时间值，使用默认值5秒${NC}"
         fi
-    done
+        TEST_TIME=5
+    fi
 
-    # Get available memory
+    # Get available memory / 获取可用内存
     total_mem=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
     
-    # Let user input memory usage percentage
-    while true; do
-        read -p "${TEXT["enter_mem_percent"]}" MEM_PERCENT
-        MEM_PERCENT=${MEM_PERCENT:-90}  # If user didn't input, default to 90%
-        
-        # Validate input is legal
-        if [[ $MEM_PERCENT =~ ^[0-9]+$ ]] && [ $MEM_PERCENT -ge 10 ] && [ $MEM_PERCENT -le 1000 ]; then
-            break
+    # Let user input memory usage percentage / 让用户输入内存使用百分比
+    if [ "$LANG" = "en" ]; then
+        echo -e "\n${BLUE}Memory Usage:${NC}"
+        echo -e "${YELLOW}Please enter the percentage of memory to use (default: 90%)${NC}"
+        echo -e "${YELLOW}Recommended: 70-90%${NC}"
+        read -p "Enter memory usage percentage (10-100): " MEM_PERCENT
+    else
+        echo -e "\n${BLUE}内存使用率：${NC}"
+        echo -e "${YELLOW}请输入要使用的内存百分比（默认：90%）${NC}"
+        echo -e "${YELLOW}推荐：70-90%${NC}"
+        read -p "请输入内存使用百分比（10-100）：" MEM_PERCENT
+    fi
+    
+    MEM_PERCENT=${MEM_PERCENT:-90}  # If user didn't input, default to 90%
+    
+    # Validate input is legal / 验证输入是否合法
+    if ! [[ $MEM_PERCENT =~ ^[0-9]+$ ]] || [ $MEM_PERCENT -lt 10 ] || [ $MEM_PERCENT -gt 100 ]; then
+        if [ "$LANG" = "en" ]; then
+            echo -e "${RED}✗ Invalid percentage, using default 90%${NC}"
         else
-            echo -e "${RED}✗ ${TEXT["invalid_percent"]}${NC}"
+            echo -e "${RED}✗ 无效的百分比，使用默认值90%${NC}"
         fi
-    done
+        MEM_PERCENT=90
+    fi
 
-    # Calculate test memory size
+    # Calculate test memory size / 计算测试内存大小
     MEM_RATIO=$(echo "scale=2; $MEM_PERCENT / 100" | bc)
     MEM_SIZE=$(echo "$total_mem * 1024 * $MEM_RATIO" | bc | awk '{printf "%d\n", $0}')
     MEM_SIZE_GB=$(echo "scale=2; $MEM_SIZE / 1024 / 1024 / 1024" | bc | awk '{printf "%.2f\n", $0}')
     
-    echo -e "${YELLOW}${TEXT["test_starting"]} ${MEM_SIZE_GB} GB ${TEXT["system_memory"]} ${TEST_TIME} ${TEXT["seconds"]}${NC}"
+    if [ "$LANG" = "en" ]; then
+        echo -e "\n${BLUE}Test Configuration:${NC}"
+        echo -e "${YELLOW}Duration: ${TEST_TIME} seconds${NC}"
+        echo -e "${YELLOW}Memory Usage: ${MEM_PERCENT}% (${MEM_SIZE_GB} GB)${NC}"
+        echo -e "${YELLOW}Starting test in 3 seconds...${NC}"
+    else
+        echo -e "\n${BLUE}测试配置：${NC}"
+        echo -e "${YELLOW}时长：${TEST_TIME} 秒${NC}"
+        echo -e "${YELLOW}内存使用率：${MEM_PERCENT}% (${MEM_SIZE_GB} GB)${NC}"
+        echo -e "${YELLOW}测试将在3秒后开始...${NC}"
+    fi
     
-    # Run stress test
+    sleep 3
+    
+    # Run stress test / 运行压力测试
     timeout ${TEST_TIME}s $STRESS_CMD --vm-bytes ${MEM_SIZE} --vm-keep -m 1 &
     STRESS_PID=$!
     
-    # Get initial CPU time
+    # Get initial CPU time / 获取初始CPU时间
     get_cpu_stats() {
         read -r cpu user nice system idle iowait irq softirq steal guest guest_nice < /proc/stat
         total=$((user + nice + system + idle + iowait + irq + softirq + steal))
@@ -659,27 +725,31 @@ stress_test() {
     prev_total=$(echo $prev_stats | awk '{print $1}')
     prev_idle=$(echo $prev_stats | awk '{print $2}')
 
-    # Monitor memory and swap space usage
-    echo -e "${BLUE}${TEXT["monitoring"]}${NC}"
-    echo -e "${YELLOW}${TEXT["note"]}${NC}"
+    # Monitor memory and swap space usage / 监控内存和交换空间使用情况
+    if [ "$LANG" = "en" ]; then
+        echo -e "\n${BLUE}Monitoring system resources...${NC}"
+        echo -e "${YELLOW}Press Ctrl+C to stop the test early${NC}"
+    else
+        echo -e "\n${BLUE}正在监控系统资源...${NC}"
+        echo -e "${YELLOW}按Ctrl+C可以提前停止测试${NC}"
+    fi
+    
     while kill -0 $STRESS_PID 2>/dev/null; do
-        # Get memory information
+        # Get memory information / 获取内存信息
         total_mem=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
         avail_mem=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
         used_mem=$((total_mem - avail_mem))
         mem_usage=$((used_mem * 100 / total_mem))
-        # Convert memory usage to GB, ensuring leading zero
         used_mem_gb=$(echo "scale=2; $used_mem / 1024 / 1024" | bc | awk '{printf "%.2f\n", $0}')
         
-        # Get swap space information
+        # Get swap space information / 获取交换空间信息
         total_swap=$(awk '/SwapTotal/ {print $2}' /proc/meminfo)
         free_swap=$(awk '/SwapFree/ {print $2}' /proc/meminfo)
         used_swap=$((total_swap - free_swap))
         swap_usage=$((total_swap > 0 ? used_swap * 100 / total_swap : 0))
-        # Convert swap usage to GB, ensuring leading zero
         used_swap_gb=$(echo "scale=2; $used_swap / 1024 / 1024" | bc | awk '{printf "%.2f\n", $0}')
         
-        # Calculate CPU usage
+        # Calculate CPU usage / 计算CPU使用率
         current_stats=$(get_cpu_stats)
         current_total=$(echo $current_stats | awk '{print $1}')
         current_idle=$(echo $current_stats | awk '{print $2}')
@@ -688,7 +758,7 @@ stress_test() {
         idle_diff=$((current_idle - prev_idle))
         cpu_usage=$((100 * (total_diff - idle_diff) / total_diff))
         
-        # Update previous stats
+        # Update previous stats / 更新之前的统计信息
         prev_total=$current_total
         prev_idle=$current_idle
         
@@ -697,27 +767,34 @@ stress_test() {
         else
             echo -e "CPU使用: ${cpu_usage}%  内存使用: ${mem_usage}% (${used_mem_gb}GB)  交换空间: ${swap_usage}% (${used_swap_gb}GB)"
         fi
-        sleep 1  # Update every second
+        sleep 1  # Update every second / 每秒更新一次
     done
     
-    echo -e "${GREEN}✓ ${TEXT["test_ended"]}${NC}"
-    # Display post-test status
+    if [ "$LANG" = "en" ]; then
+        echo -e "\n${GREEN}✓ Test completed${NC}"
+        echo -e "${BLUE}Final system status:${NC}"
+    else
+        echo -e "\n${GREEN}✓ 测试完成${NC}"
+        echo -e "${BLUE}最终系统状态：${NC}"
+    fi
+    
+    # Display post-test status / 显示测试后状态
     for i in {1..1}; do
-        # Get memory information
+        # Get memory information / 获取内存信息
         total_mem=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
         avail_mem=$(awk '/MemAvailable/ {print $2}' /proc/meminfo)
         used_mem=$((total_mem - avail_mem))
         mem_usage=$((used_mem * 100 / total_mem))
         used_mem_gb=$(echo "scale=2; $used_mem / 1024 / 1024" | bc | awk '{printf "%.2f\n", $0}')
         
-        # Get swap space information
+        # Get swap space information / 获取交换空间信息
         total_swap=$(awk '/SwapTotal/ {print $2}' /proc/meminfo)
         free_swap=$(awk '/SwapFree/ {print $2}' /proc/meminfo)
         used_swap=$((total_swap - free_swap))
         swap_usage=$((total_swap > 0 ? used_swap * 100 / total_swap : 0))
         used_swap_gb=$(echo "scale=2; $used_swap / 1024 / 1024" | bc | awk '{printf "%.2f\n", $0}')
         
-        # Calculate CPU usage
+        # Calculate CPU usage / 计算CPU使用率
         current_stats=$(get_cpu_stats)
         current_total=$(echo $current_stats | awk '{print $1}')
         current_idle=$(echo $current_stats | awk '{print $2}')
@@ -726,7 +803,7 @@ stress_test() {
         idle_diff=$((current_idle - prev_idle))
         cpu_usage=$((100 * (total_diff - idle_diff) / total_diff))
         
-        # Update previous stats
+        # Update previous stats / 更新之前的统计信息
         prev_total=$current_total
         prev_idle=$current_idle
         
@@ -735,80 +812,167 @@ stress_test() {
         else
             echo -e "CPU使用: ${cpu_usage}%  内存使用: ${mem_usage}% (${used_mem_gb}GB)  交换空间: ${swap_usage}% (${used_swap_gb}GB)"
         fi
-        sleep 1  # Update every second
+        sleep 1  # Update every second / 每秒更新一次
     done
 }
 
 # Add uninstall function / 添加卸载函数
 uninstall_program() {
-    echo -e "${YELLOW}${TEXT["uninstall_preparing"]}${NC}"
-    
-    echo -e "\n${BLUE}${TEXT["uninstall_options"]}${NC}"
-    echo -e "${GREEN}${TEXT["delete_swap_only"]}${NC}"
-    echo -e "${GREEN}${TEXT["delete_program_only"]}${NC}"
-    echo -e "${RED}${TEXT["delete_all"]}${NC}"
-    echo -e "${BLUE}${TEXT["cancel"]}${NC}"
-    
-    read -p "${TEXT["enter_option_uninstall"]}" uninstall_choice
+    if [ "$LANG" = "en" ]; then
+        echo -e "${BLUE}Preparing to uninstall...${NC}"
+        echo -e "${YELLOW}Please select an uninstall option:${NC}"
+        echo -e "${GREEN}1. Delete swap file only${NC}"
+        echo -e "${GREEN}2. Delete program only${NC}"
+        echo -e "${RED}3. Delete all (swap file and program)${NC}"
+        echo -e "${BLUE}4. Cancel${NC}"
+        read -p "Enter your choice (1-4): " uninstall_choice
+    else
+        echo -e "${BLUE}准备卸载...${NC}"
+        echo -e "${YELLOW}请选择卸载选项：${NC}"
+        echo -e "${GREEN}1. 仅删除交换文件${NC}"
+        echo -e "${GREEN}2. 仅删除程序${NC}"
+        echo -e "${RED}3. 删除所有（交换文件和程序）${NC}"
+        echo -e "${BLUE}4. 取消${NC}"
+        read -p "请输入选项（1-4）：" uninstall_choice
+    fi
     
     case $uninstall_choice in
-        1)  # Delete swap file only
-            read -p "${TEXT["confirm_delete_swap"]}" confirm
+        1)  # Delete swap file only / 仅删除交换文件
+            if [ "$LANG" = "en" ]; then
+                echo -e "${YELLOW}This will only delete the swap file. The program will remain installed.${NC}"
+                read -p "Are you sure you want to continue? (y/N): " confirm
+            else
+                echo -e "${YELLOW}这将仅删除交换文件。程序将保持安装状态。${NC}"
+                read -p "确定要继续吗？(y/N)：" confirm
+            fi
+            
             if [[ $confirm =~ ^[Yy]$ ]]; then
                 if [ -f /swapfile ]; then
-                    echo -e "${BLUE}${TEXT["deleting"]} ${TEXT["swap_file"]}${NC}"
+                    if [ "$LANG" = "en" ]; then
+                        echo -e "${BLUE}Deleting swap file...${NC}"
+                    else
+                        echo -e "${BLUE}正在删除交换文件...${NC}"
+                    fi
                     sudo swapoff /swapfile 2>/dev/null
                     sudo rm -f /swapfile
                     sudo sed -i '/\/swapfile/d' /etc/fstab
-                    echo -e "${GREEN}✓ ${TEXT["swap_deleted"]}${NC}"
+                    if [ "$LANG" = "en" ]; then
+                        echo -e "${GREEN}✓ Swap file deleted successfully${NC}"
+                    else
+                        echo -e "${GREEN}✓ 交换文件删除成功${NC}"
+                    fi
                 else
-                    echo -e "${YELLOW}${TEXT["swap_not_found"]}${NC}"
+                    if [ "$LANG" = "en" ]; then
+                        echo -e "${YELLOW}No swap file found${NC}"
+                    else
+                        echo -e "${YELLOW}未找到交换文件${NC}"
+                    fi
                 fi
             else
-                echo -e "${BLUE}${TEXT["uninstall_cancelled"]}${NC}"
+                if [ "$LANG" = "en" ]; then
+                    echo -e "${BLUE}Operation cancelled${NC}"
+                else
+                    echo -e "${BLUE}操作已取消${NC}"
+                fi
             fi
             ;;
             
-        2)  # Delete program only
-            read -p "${TEXT["confirm_delete_program"]}" confirm
+        2)  # Delete program only / 仅删除程序
+            if [ "$LANG" = "en" ]; then
+                echo -e "${YELLOW}This will only delete the program. The swap file will remain.${NC}"
+                read -p "Are you sure you want to continue? (y/N): " confirm
+            else
+                echo -e "${YELLOW}这将仅删除程序。交换文件将保留。${NC}"
+                read -p "确定要继续吗？(y/N)：" confirm
+            fi
+            
             if [[ $confirm =~ ^[Yy]$ ]]; then
-                echo -e "${BLUE}${TEXT["deleting"]} ${TEXT["program"]}${NC}"
+                if [ "$LANG" = "en" ]; then
+                    echo -e "${BLUE}Deleting program...${NC}"
+                else
+                    echo -e "${BLUE}正在删除程序...${NC}"
+                fi
                 sudo rm -f /usr/local/bin/swap
-                echo -e "${GREEN}✓ ${TEXT["program_deleted"]}${NC}"
+                if [ "$LANG" = "en" ]; then
+                    echo -e "${GREEN}✓ Program deleted successfully${NC}"
+                else
+                    echo -e "${GREEN}✓ 程序删除成功${NC}"
+                fi
                 exit 0
             else
-                echo -e "${BLUE}${TEXT["uninstall_cancelled"]}${NC}"
+                if [ "$LANG" = "en" ]; then
+                    echo -e "${BLUE}Operation cancelled${NC}"
+                else
+                    echo -e "${BLUE}操作已取消${NC}"
+                fi
             fi
             ;;
             
-        3)  # Delete all
-            read -p "${TEXT["confirm_delete_all"]}" confirm
+        3)  # Delete all / 删除所有
+            if [ "$LANG" = "en" ]; then
+                echo -e "${RED}This will delete both the swap file and the program.${NC}"
+                echo -e "${RED}This action cannot be undone.${NC}"
+                read -p "Are you sure you want to continue? (y/N): " confirm
+            else
+                echo -e "${RED}这将删除交换文件和程序。${NC}"
+                echo -e "${RED}此操作无法撤销。${NC}"
+                read -p "确定要继续吗？(y/N)：" confirm
+            fi
+            
             if [[ $confirm =~ ^[Yy]$ ]]; then
-                # Delete swap file
+                # Delete swap file / 删除交换文件
                 if [ -f /swapfile ]; then
-                    echo -e "${BLUE}${TEXT["deleting"]} ${TEXT["swap_file"]}${NC}"
+                    if [ "$LANG" = "en" ]; then
+                        echo -e "${BLUE}Deleting swap file...${NC}"
+                    else
+                        echo -e "${BLUE}正在删除交换文件...${NC}"
+                    fi
                     sudo swapoff /swapfile 2>/dev/null
                     sudo rm -f /swapfile
                     sudo sed -i '/\/swapfile/d' /etc/fstab
-                    echo -e "${GREEN}✓ ${TEXT["swap_deleted"]}${NC}"
+                    if [ "$LANG" = "en" ]; then
+                        echo -e "${GREEN}✓ Swap file deleted successfully${NC}"
+                    else
+                        echo -e "${GREEN}✓ 交换文件删除成功${NC}"
+                    fi
                 fi
                 
-                # Delete program
-                echo -e "${BLUE}${TEXT["deleting"]} ${TEXT["program"]}${NC}"
+                # Delete program / 删除程序
+                if [ "$LANG" = "en" ]; then
+                    echo -e "${BLUE}Deleting program...${NC}"
+                else
+                    echo -e "${BLUE}正在删除程序...${NC}"
+                fi
                 sudo rm -f /usr/local/bin/swap
-                echo -e "${GREEN}✓ ${TEXT["program_deleted"]}${NC}"
+                if [ "$LANG" = "en" ]; then
+                    echo -e "${GREEN}✓ Program deleted successfully${NC}"
+                else
+                    echo -e "${GREEN}✓ 程序删除成功${NC}"
+                fi
                 exit 0
             else
-                echo -e "${BLUE}${TEXT["uninstall_cancelled"]}${NC}"
+                if [ "$LANG" = "en" ]; then
+                    echo -e "${BLUE}Operation cancelled${NC}"
+                else
+                    echo -e "${BLUE}操作已取消${NC}"
+                fi
             fi
             ;;
             
-        4)  # Cancel
-            echo -e "${BLUE}${TEXT["uninstall_cancelled"]}${NC}"
+        4)  # Cancel / 取消
+            if [ "$LANG" = "en" ]; then
+                echo -e "${BLUE}Uninstall cancelled${NC}"
+            else
+                echo -e "${BLUE}卸载已取消${NC}"
+            fi
             ;;
             
         *)
-            echo -e "${RED}✗ ${TEXT["invalid_option"]}${NC}"
+            if [ "$LANG" = "en" ]; then
+                echo -e "${RED}✗ Invalid option, please enter a number between 1 and 4${NC}"
+            else
+                echo -e "${RED}✗ 无效选项，请输入1到4之间的数字${NC}"
+            fi
             ;;
     esac
 }
