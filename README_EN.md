@@ -1,5 +1,7 @@
 # Swap Manager
 
+English | [简体中文](README.md)
+
 A powerful tool for managing swap space in Linux systems, providing a graphical menu interface with features for creating, deleting, monitoring, and performance testing of swap files.
 
 ## ✨ Features
