@@ -8,7 +8,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # Reset color / 重置颜色
 
 # Language settings / 语言设置
-LANG_FILE="/tmp/swap_manager_lang"
+LANG_FILE="/etc/swap_manager_lang"
 if [ -f "$LANG_FILE" ]; then
     LANG=$(cat "$LANG_FILE")
 else
@@ -21,7 +21,12 @@ else
         2) LANG="zh" ;;
         *) LANG="en" ;;
     esac
-    echo "$LANG" > "$LANG_FILE"
+    # 尝试保存语言设置到/etc目录
+    if ! echo "$LANG" | sudo tee "$LANG_FILE" > /dev/null; then
+        # 如果保存到/etc失败，则尝试保存到用户主目录
+        LANG_FILE="$HOME/.swap_manager_lang"
+        echo "$LANG" > "$LANG_FILE"
+    fi
 fi
 
 # Define language texts / 定义语言文本
@@ -817,20 +822,74 @@ while true; do
         read -p "请输入选项（1-7）：" choice
     fi
 
+    # Validate input is a number / 验证输入是否为数字
+    if ! [[ "$choice" =~ ^[1-7]$ ]]; then
+        if [ "$LANG" = "en" ]; then
+            echo -e "${RED}✗ Invalid option, please enter a number between 1 and 7.${NC}"
+        else
+            echo -e "${RED}✗ 无效选项，请输入1到7之间的数字。${NC}"
+        fi
+        continue
+    fi
+
     case $choice in
-        1) create_swap ;;
-        2) delete_swap ;;
-        3) view_swap ;;
-        4) adjust_swappiness ;;
-        5) stress_test ;;
-        6) uninstall_program ;;
-        7) break ;;
-        *) 
+        1) 
+            # Create swap file / 创建交换文件
             if [ "$LANG" = "en" ]; then
-                echo -e "${RED}✗ Invalid option, please try again.${NC}"
+                echo -e "${BLUE}Creating swap file...${NC}"
             else
-                echo -e "${RED}✗ 无效选项，请重新输入。${NC}"
-            fi 
+                echo -e "${BLUE}正在创建交换文件...${NC}"
+            fi
+            create_swap 
+            ;;
+        2) 
+            # Delete swap file / 删除交换文件
+            if [ "$LANG" = "en" ]; then
+                echo -e "${BLUE}Deleting swap file...${NC}"
+            else
+                echo -e "${BLUE}正在删除交换文件...${NC}"
+            fi
+            delete_swap 
+            ;;
+        3) 
+            # View swap information / 查看交换空间信息
+            view_swap 
+            ;;
+        4) 
+            # Adjust memory swappiness / 调整内存交换倾向性
+            if [ "$LANG" = "en" ]; then
+                echo -e "${BLUE}Adjusting memory swappiness...${NC}"
+            else
+                echo -e "${BLUE}正在调整内存交换倾向性...${NC}"
+            fi
+            adjust_swappiness 
+            ;;
+        5) 
+            # Start memory stress test / 启动内存压力测试
+            if [ "$LANG" = "en" ]; then
+                echo -e "${BLUE}Starting memory stress test...${NC}"
+            else
+                echo -e "${BLUE}正在启动内存压力测试...${NC}"
+            fi
+            stress_test 
+            ;;
+        6) 
+            # Uninstall program / 卸载程序
+            if [ "$LANG" = "en" ]; then
+                echo -e "${BLUE}Preparing to uninstall...${NC}"
+            else
+                echo -e "${BLUE}准备卸载...${NC}"
+            fi
+            uninstall_program 
+            ;;
+        7) 
+            # Exit program / 退出程序
+            if [ "$LANG" = "en" ]; then
+                echo -e "${GREEN}Thank you for using Swap Manager. Goodbye!${NC}"
+            else
+                echo -e "${GREEN}感谢使用交换空间管理器。再见！${NC}"
+            fi
+            break 
             ;;
     esac
 done
