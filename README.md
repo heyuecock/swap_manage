@@ -115,3 +115,6 @@ A: 通常建议设置为物理内存的1-2倍，但要根据实际使用情况�
 
 Q: swappiness值如何调整？
 A: 服务器建议设置为10-30，桌面系统可以设置为30-60。
+
+
+[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
