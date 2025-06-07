@@ -463,27 +463,49 @@ view_swap() {
         disk_avail=$(echo $disk_info | awk '{print $4}')
         disk_usage=$(echo $disk_info | awk '{print $5}')
         
-
-        
-        echo -e "${BLUE}========== 系统资源信息 =========${NC}"
-        echo -e "${GREEN}内存信息：${NC}"
-        echo -e "总内存：${total_mem}MB"
-        echo -e "已使用：${used_mem}MB (${mem_usage}%)"
-        echo -e "空闲内存：${free_mem}MB"
-        echo -e "共享内存：${shared_mem}MB"
-        echo -e "缓存/缓冲区：${buff_cache}MB"
-        echo -e "实际可用内存：${available_mem}MB (${available_percent}%)"
-        echo -e "${GREEN}交换空间信息：${NC}"
-        echo -e "总交换空间：${total_swap}MB"
-        echo -e "已使用：${used_swap}MB (${swap_usage}%)"
-        echo -e "可用交换空间：${free_swap}MB"
-        echo -e "${GREEN}磁盘信息：${NC}"
-        echo -e "总空间：${disk_total}"
-        echo -e "已使用：${disk_used} (${disk_usage})"
-        echo -e "可用空间：${disk_avail}"
-        echo -e "${BLUE}===============================${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${BLUE}========== System Resource Information =========${NC}"
+            echo -e "${GREEN}Memory Information:${NC}"
+            echo -e "Total Memory: ${total_mem}MB"
+            echo -e "Used: ${used_mem}MB (${mem_usage}%)"
+            echo -e "Free Memory: ${free_mem}MB"
+            echo -e "Shared Memory: ${shared_mem}MB"
+            echo -e "Buffer/Cache: ${buff_cache}MB"
+            echo -e "Available Memory: ${available_mem}MB (${available_percent}%)"
+            echo -e "${GREEN}Swap Space Information:${NC}"
+            echo -e "Total Swap Space: ${total_swap}MB"
+            echo -e "Used: ${used_swap}MB (${swap_usage}%)"
+            echo -e "Available Swap Space: ${free_swap}MB"
+            echo -e "${GREEN}Disk Information:${NC}"
+            echo -e "Total Space: ${disk_total}"
+            echo -e "Used: ${disk_used} (${disk_usage})"
+            echo -e "Available Space: ${disk_avail}"
+            echo -e "${BLUE}===============================${NC}"
+        else
+            echo -e "${BLUE}========== 系统资源信息 =========${NC}"
+            echo -e "${GREEN}内存信息：${NC}"
+            echo -e "总内存：${total_mem}MB"
+            echo -e "已使用：${used_mem}MB (${mem_usage}%)"
+            echo -e "空闲内存：${free_mem}MB"
+            echo -e "共享内存：${shared_mem}MB"
+            echo -e "缓存/缓冲区：${buff_cache}MB"
+            echo -e "实际可用内存：${available_mem}MB (${available_percent}%)"
+            echo -e "${GREEN}交换空间信息：${NC}"
+            echo -e "总交换空间：${total_swap}MB"
+            echo -e "已使用：${used_swap}MB (${swap_usage}%)"
+            echo -e "可用交换空间：${free_swap}MB"
+            echo -e "${GREEN}磁盘信息：${NC}"
+            echo -e "总空间：${disk_total}"
+            echo -e "已使用：${disk_used} (${disk_usage})"
+            echo -e "可用空间：${disk_avail}"
+            echo -e "${BLUE}===============================${NC}"
+        fi
     else
-        echo -e "${BLUE}未启用交换空间。${NC}"
+        if [ "$LANG" = "en" ]; then
+            echo -e "${BLUE}No swap space enabled.${NC}"
+        else
+            echo -e "${BLUE}未启用交换空间。${NC}"
+        fi
     fi
 }
 
@@ -665,7 +687,11 @@ stress_test() {
         prev_total=$current_total
         prev_idle=$current_idle
         
-        echo -e "CPU使用: ${cpu_usage}%  内存使用: ${mem_usage}% (${used_mem_gb}GB)  交换空间: ${swap_usage}% (${used_swap_gb}GB)"
+        if [ "$LANG" = "en" ]; then
+            echo -e "CPU Usage: ${cpu_usage}%  Memory Usage: ${mem_usage}% (${used_mem_gb}GB)  Swap Space: ${swap_usage}% (${used_swap_gb}GB)"
+        else
+            echo -e "CPU使用: ${cpu_usage}%  内存使用: ${mem_usage}% (${used_mem_gb}GB)  交换空间: ${swap_usage}% (${used_swap_gb}GB)"
+        fi
         sleep 1  # 每秒更新一次
     done
     
@@ -699,7 +725,11 @@ stress_test() {
         prev_total=$current_total
         prev_idle=$current_idle
         
-        echo -e "CPU使用: ${cpu_usage}%  内存使用: ${mem_usage}% (${used_mem_gb}GB)  交换空间: ${swap_usage}% (${used_swap_gb}GB)"
+        if [ "$LANG" = "en" ]; then
+            echo -e "CPU Usage: ${cpu_usage}%  Memory Usage: ${mem_usage}% (${used_mem_gb}GB)  Swap Space: ${swap_usage}% (${used_swap_gb}GB)"
+        else
+            echo -e "CPU使用: ${cpu_usage}%  内存使用: ${mem_usage}% (${used_mem_gb}GB)  交换空间: ${swap_usage}% (${used_swap_gb}GB)"
+        fi
         sleep 1  # 每秒更新一次
     done
 }
